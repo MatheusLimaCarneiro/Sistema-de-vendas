@@ -1,8 +1,9 @@
 package estudo.jpa.spring.service.imp;
 
+import estudo.jpa.spring.exception.SenhaInvalidaException;
 import estudo.jpa.spring.modal.Usuario;
 import estudo.jpa.spring.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -12,17 +13,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class UsuarioServiceImp implements UserDetailsService {
 
-    @Autowired
-    private PasswordEncoder encoder;
-
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final PasswordEncoder encoder;
+    private final UsuarioRepository usuarioRepository;
 
     @Transactional
-    public Usuario salvar(Usuario usuario){
+    public Usuario salvar(Usuario usuario) {
         return usuarioRepository.save(usuario);
+    }
+
+    public UserDetails autenticar(Usuario usuario){
+        UserDetails user = loadUserByUsername(usuario.getLogin());
+        boolean senhasBatem = encoder.matches(usuario.getSenha(), user.getPassword());
+
+        if (senhasBatem) {
+            return user;
+        }
+
+        throw new SenhaInvalidaException();
     }
 
     @Override
