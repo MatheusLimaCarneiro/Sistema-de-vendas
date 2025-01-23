@@ -8,6 +8,11 @@ import estudo.jpa.spring.rest.dto.InformacaoItemPedidoDTO;
 import estudo.jpa.spring.rest.dto.InformacoesPedidoDTO;
 import estudo.jpa.spring.rest.dto.PedidoDTO;
 import estudo.jpa.spring.service.PedidoService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,6 +27,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/pedidos")
+@Tag(name = "Pedidos", description = "Gerenciamento de Pedidos")
 public class PedidosController {
 
     @Autowired
@@ -29,13 +35,26 @@ public class PedidosController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Integer save(@RequestBody @Valid PedidoDTO dto){
-       Pedido pedido = pedidoService.salvar(dto);
-       return pedido.getId();
+    @Operation(summary = "Criar um novo pedido", description = "Registra um novo pedido na base de dados.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Pedido criado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Erro de validação nos dados do pedido")
+    })
+    public Integer save(
+            @RequestBody @Valid PedidoDTO dto) {
+        Pedido pedido = pedidoService.salvar(dto);
+        return pedido.getId();
     }
 
     @GetMapping("/{id}")
-    public InformacoesPedidoDTO getById(@PathVariable Integer id){
+    @Operation(summary = "Buscar pedido por ID", description = "Retorna as informações completas de um pedido pelo ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pedido encontrado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+    })
+    public InformacoesPedidoDTO getById(
+            @Parameter(description = "ID do pedido a ser buscado", required = true)
+            @PathVariable Integer id) {
         return pedidoService
                 .obterPedidoCompleto(id)
                 .map(p -> converter(p))
@@ -46,13 +65,20 @@ public class PedidosController {
 
     @PatchMapping("{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateStatus(@PathVariable Integer id,
-                             @RequestBody AtualizacaoStatusPedidoDTO dto){
+    @Operation(summary = "Atualizar status do pedido", description = "Atualiza o status de um pedido existente.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Status do pedido atualizado com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Pedido não encontrado")
+    })
+    public void updateStatus(
+            @Parameter(description = "ID do pedido cujo status será atualizado", required = true)
+            @PathVariable Integer id,
+            @RequestBody @Valid AtualizacaoStatusPedidoDTO dto) {
         String novoStatus = dto.getNovoStatus();
         pedidoService.atualizaStatus(id, StatusPedido.valueOf(novoStatus));
     }
 
-    private InformacoesPedidoDTO converter(Pedido pedido){
+    private InformacoesPedidoDTO converter(Pedido pedido) {
         return InformacoesPedidoDTO
                 .builder()
                 .codigo(pedido.getId())
@@ -66,8 +92,8 @@ public class PedidosController {
                 .build();
     }
 
-    private List<InformacaoItemPedidoDTO> converterItem(List<ItemPedido> itens){
-        if (CollectionUtils.isEmpty(itens)){
+    private List<InformacaoItemPedidoDTO> converterItem(List<ItemPedido> itens) {
+        if (CollectionUtils.isEmpty(itens)) {
             return Collections.emptyList();
         }
         return itens
