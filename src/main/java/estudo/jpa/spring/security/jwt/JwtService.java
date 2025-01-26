@@ -78,7 +78,7 @@ public class JwtService {
         System.out.println(token);
 
         boolean isTokenValido = service.tokenValido(token);
-        System.out.println("O token esta valido? " + isTokenValido);
+        System.out.println("O seu token esta valido? " + isTokenValido);
         System.out.println(service.obterLoginUsuario(token));
     }
 }
